@@ -294,7 +294,7 @@ class _UserAccountState extends State<UserAccount> {
       case 1:
         if (poplist.isNotEmpty)
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            Navigator.pushReplacementNamed(context, ScanDevices.routeName,
+            Navigator.pushReplacementNamed(context, scanScreen.routeName,
                 arguments: discoveredBluetoothDevicesList);
           });
         else {
