@@ -322,8 +322,15 @@ int sec_counter=0;
 
   timer_function() async
   {
+    int templength=discoveredBluetoothDevicesList.length;
     for (ScanResult r in discoveredBluetoothDevicesList) {
+      templength --;
       await is_present(r);
+      if(templength==0)
+        {for (ScanResult r in discoveredBluetoothDevicesList) {
+          await stream(r);
+        }
+        }
     }
 
     if (ch1.isNotEmpty) {
@@ -386,7 +393,7 @@ int sec_counter=0;
               .value = false;
         });
         // print("device iam connected with $bluetoothDevice");
-        await stream(bluetoothDevice);
+
       }
     }// }
   }
