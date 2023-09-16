@@ -56,22 +56,22 @@ class _ScanDevices extends State<ScanDevices> {
   int discoveredCount=0;
   bool flagDiscoverServices = false;
 
-   BluetoothCharacteristic? ch,chr;
+  BluetoothCharacteristic? ch,chr;
   List<BluetoothCharacteristic?> ch1=[],ch2=[];
   List<Map<String, dynamic>> ch_group=[];
   bool _showOverlay = false;
   List<GroupModel> groupsList = [];
   List<PopLightModel> popLightsList = [];
   List<ScanResult> discoveredBluetoothDevicesList = [];
-  // List<ScanResult> foundPopLightsList = [];
+  List<ScanResult> foundPopLightsList = [];
   List<BluetoothCh> bluetoothCharacteristics=[];
 
 
   // final Map<DeviceIdentifier, ValueNotifier<bool>> isConnectingOrDisconnecting = {};
   late StreamSubscription<FGBGType> subscription;
 
-Timer? _timer, _timer1, _timer2, _timer3,_counter;
-int sec_counter=0;
+  Timer? _counter;
+  int sec_counter=0;
   final DateTime now = DateTime.now();
 
   @override
@@ -80,90 +80,85 @@ int sec_counter=0;
     super.initState();
     sec_counter=0;
     startScanner();
-    _counter=Timer.periodic(Duration(seconds: 1), (timer) {
-      setState(() {
-        sec_counter++;
-      });
-
-    });
+    // _counter=Timer.periodic(Duration(seconds: 1), (timer) {
+    //   setState(() {
+    //     sec_counter++;
+    //   });
+    //
+    // });
 
 
   }
   @override
-  void dispose() {
-    ch1=[];
-    _counter?.cancel();
 
-    _timer1?.cancel();
-    _timer2?.cancel();
-    _timer3?.cancel();
-    _timer?.cancel();
+ void dispose() {
     super.dispose();
-  }
+}
 
 //
   @override
   Widget build(BuildContext context) {
     discoveredBluetoothDevicesList = ModalRoute.of(context)!.settings.arguments as List<ScanResult>;
 
+
     SizeConfig().init(context);
 
-        return WillPopScope(
-          onWillPop: () async {
+    return WillPopScope(
+      onWillPop: () async {
 
-            Navigator.pushReplacementNamed(context, UserAccount.routeName,
-                arguments: {"popid": 0, "disclist": discoveredBluetoothDevicesList});
-            return true;
-          },
+        Navigator.pushReplacementNamed(context, UserAccount.routeName,
+            arguments: {"popid": 0, "disclist": discoveredBluetoothDevicesList});
+        return true;
+      },
 
-          child:
-          Stack(
+      child:
+      Stack(
+        children: [
+          Container(
+
+            width: double.infinity, // Fills the width of the parent
+            height: double.infinity,
+            child: SvgPicture.asset("assets/connection_waiting.svg",fit: BoxFit.fill,),
+          ),
+
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
+
+              SizedBox(
+                height: MediaQuery
+                    .of(context)
+                    .size
+                    .height * 0.03,
+              ),
+
+              Text(
+                "timer:${sec_counter}",
+                style: TextStyle(fontSize: 20, color: Colors.red),
+              ),
+              SizedBox(
+                height: MediaQuery
+                    .of(context)
+                    .size
+                    .height * 0.3,
+              ),
               Container(
 
-                width: double.infinity, // Fills the width of the parent
-                height: double.infinity,
-                child: SvgPicture.asset("assets/connection_waiting.svg",fit: BoxFit.fill,),
+                  alignment: Alignment(0.0, -0.5),
+                  child: CircularProgressIndicator(
+
+                    color: Colors.red,
+
+
+                  )
               ),
 
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-
-                  SizedBox(
-                    height: MediaQuery
-                        .of(context)
-                        .size
-                        .height * 0.03,
-                  ),
-
-                  Text(
-                    "timer:${sec_counter}",
-                    style: TextStyle(fontSize: 20, color: Colors.red),
-                  ),
-                  SizedBox(
-                    height: MediaQuery
-                        .of(context)
-                        .size
-                        .height * 0.3,
-                  ),
-                  Container(
-
-                      alignment: Alignment(0.0, -0.5),
-                      child: CircularProgressIndicator(
-
-                        color: Colors.red,
-
-
-                      )
-                  ),
-
-                ],
-              ),
             ],
           ),
-        );
+        ],
+      ),
+    );
     // }});
 
 
@@ -279,69 +274,81 @@ int sec_counter=0;
 //   }
   startScanner() async
   { bool present=false;
-      try{
-         FlutterBluePlus.scanResults.listen((results) {
-          for (ScanResult r in results) {
-            if (r.device.localName == "POP_Light") {
-              for (int index = 0; index <
-                  discoveredBluetoothDevicesList.length; index++) {
-                if (discoveredBluetoothDevicesList[index]?.device.remoteId ==
-                    r?.device.remoteId || r == null) {
-                  present == true;
-                }
-              }
-              if (present == false) {
-                discoveredBluetoothDevicesList.add(r);
-              }
-              // print('${r.device.localName} found! rssi: ${r.rssi}');
+
+
+  try{
+
+    FlutterBluePlus.scanResults.listen((results) async {
+
+      for (ScanResult r in results) {
+        if (r.device.localName == "POP_Light") {
+          for (int index = 0; index <
+              foundPopLightsList.length; index++) {
+
+            if (foundPopLightsList[index]?.device.remoteId.toString()==
+                r?.device.remoteId.toString()) {
+              present == true;
             }
           }
-        });
-// Start scanning
-        FlutterBluePlus.startScan(timeout: Duration(milliseconds: 200));
-// Stop scanning
-        await Future.delayed(Duration(milliseconds: 500));
-
-        // Stop scanning
-        await FlutterBluePlus.stopScan();
-        con_time=discoveredBluetoothDevicesList.length*con_time;
-          timer_function();
-
-        if(FlutterBluePlus.isScanning==false)
-          {
-            print("Stoped scanning");
+          if (present == false) {
+            foundPopLightsList.add(r);
           }
+          // print('${r.device.localName} found! rssi: ${r.rssi}');
+
+        }
       }
-      catch (e) {
-        final snackBar = snackBarFail(prettyException("Start Scan Error:", e));
-        snackBarKeyB.currentState?.removeCurrentSnackBar();
-        snackBarKeyB.currentState?.showSnackBar(snackBar);
+    });
+// Start scanning
+    print("before scan length ${discoveredBluetoothDevicesList}");
+    FlutterBluePlus.startScan(timeout: Duration(milliseconds: 200));
+// Stop scanning
+    await Future.delayed(Duration(milliseconds: 500));
+
+    // Stop scanning
+    await FlutterBluePlus.stopScan();
+
+
+    for (int j = 0; j < foundPopLightsList.length; j++) {
+      if (foundPopLightsList[j].device.remoteId.toString() =="POP_Light") {
+        // print("matched");
+        for (int index = 0; index <discoveredBluetoothDevicesList.length; index++)
+          if (discoveredBluetoothDevicesList[index]?.device
+              .remoteId.toString()== foundPopLightsList[j].device.remoteId.toString()) {
+            present == true;
+          }
+        if (present == false)
+          discoveredBluetoothDevicesList.add(foundPopLightsList[j]);
       }
+    }
+
+
+
+    int length=discoveredBluetoothDevicesList.length;
+    print("Devices in discovered list after scan");
+    for (int i=0;i<discoveredBluetoothDevicesList.length;i++)
+    {
+      print("Devic ${discoveredBluetoothDevicesList[i].device.remoteId}");
+      if(i==discoveredBluetoothDevicesList.length-1)
+        begin();
+
+    }
+
+
+
+    if(FlutterBluePlus.isScanning==false)
+    {
+      print("Stoped scanning");
+    }
+  }
+  catch (e) {
+    final snackBar = snackBarFail(prettyException("Start Scan Error:", e));
+    snackBarKeyB.currentState?.removeCurrentSnackBar();
+    snackBarKeyB.currentState?.showSnackBar(snackBar);
+  }
+
   }
 
 
-  timer_function() async
-  {
-    int templength=discoveredBluetoothDevicesList.length;
-    for (ScanResult r in discoveredBluetoothDevicesList) {
-      templength --;
-      await is_present(r);
-      if(templength==0)
-        {for (ScanResult r in discoveredBluetoothDevicesList) {
-          await stream(r);
-        }
-        }
-    }
-
-    if (ch1.isNotEmpty) {
-      print("ch list we are sending $ch1");
-      Navigator.pushReplacementNamed(context, AdjustSettingsHome.routeName,
-          arguments: {
-            'ch': ch1,
-            "disclist": discoveredBluetoothDevicesList
-          });
-    }
-  }
 //   disconnect() async{
 //     for (ScanResult bluetoothDevice in foundPopLightsList) {
 //       isConnectingOrDisconnecting[bluetoothDevice.device.remoteId] ??= ValueNotifier(true);
@@ -358,14 +365,14 @@ int sec_counter=0;
 //   }
 
 
-  connection(ScanResult bluetoothDevice) async {
+  connection(BluetoothDevice bluetoothDevice) async {
 
-
-    if (bluetoothDevice.device.localName == 'POP_Light')
+    if(await is_connected(bluetoothDevice)==false){
+    if (bluetoothDevice.localName == 'POP_Light')
     {
       bool present=false;
       for (int index=0;index<ch1.length;index++){
-        if(ch1[index]?.remoteId==bluetoothDevice.device.remoteId) {
+        if(ch1[index]?.remoteId==bluetoothDevice.remoteId) {
           present == true;
 
         }}
@@ -375,10 +382,10 @@ int sec_counter=0;
 
 
         isConnectingOrDisconnecting[
-        bluetoothDevice.device.remoteId] ??= ValueNotifier(true);
-        isConnectingOrDisconnecting[bluetoothDevice.device.remoteId]!
+        bluetoothDevice.remoteId] ??= ValueNotifier(true);
+        isConnectingOrDisconnecting[bluetoothDevice.remoteId]!
             .value = true;
-        await bluetoothDevice.device
+        await bluetoothDevice
             .connect(timeout: Duration(seconds: 1))
             .catchError((e) {
           final snackBar =
@@ -386,53 +393,97 @@ int sec_counter=0;
           snackBarKeyC.currentState?.removeCurrentSnackBar();
           snackBarKeyC.currentState?.showSnackBar(snackBar);
         }).then((v) {
-          isConnectingOrDisconnecting[bluetoothDevice
-              .device.remoteId] ??= ValueNotifier(false);
+          isConnectingOrDisconnecting[bluetoothDevice.remoteId] ??= ValueNotifier(false);
           isConnectingOrDisconnecting[
-          bluetoothDevice.device.remoteId]!
+          bluetoothDevice.remoteId]!
               .value = false;
         });
+        bool isconnected=await is_connected(bluetoothDevice);
+        print("isconnected $isconnected");
+
         // print("device iam connected with $bluetoothDevice");
 
       }
-    }// }
+    }
+ }
+
   }
 
 
 
-  stream(ScanResult r) async {
+  stream(BluetoothDevice r) async {
     print("In Stream ---------------------------------------------------------------");
     // for(ScanResult r in discoveredBluetoothDevicesList){
-    List<BluetoothService> services = await r.device.discoverServices(timeout:1);
-    // print("Services in stream $services");
-    services.forEach((service) async {
-      BluetoothCharacteristic? chh,chhh;
-      // print("services we got .......${service}");
-      if (service.serviceUuid.toString().toUpperCase().contains("FFB0") == true) {
-        for (BluetoothCharacteristic bc in service.characteristics) {
-          if (bc.characteristicUuid.toString().toUpperCase().contains("FFB1") == true) {
-            chh=bc;
 
+      List<BluetoothService> services =
+          await r.discoverServices(timeout: 1);
+      // print("Services in stream $services");
+      services.forEach((service) async {
+        BluetoothCharacteristic? chh, chhh;
+        // print("services we got .......${service}");
+        if (service.serviceUuid.toString().toUpperCase().contains("FFB0") ==
+            true) {
+          for (BluetoothCharacteristic bc in service.characteristics) {
+            if (bc.characteristicUuid
+                    .toString()
+                    .toUpperCase()
+                    .contains("FFB1") ==
+                true) {
+              chh = bc;
+            }
           }
         }
-      }
-      bool present=false;
-      for (int index=0;index<ch1.length;index++)
-        if(ch1[index]?.remoteId==chh?.remoteId || chh==null) {
-          present == true;
-          chh=chhh;
+        bool present = false;
+        for (int index = 0; index < ch1.length; index++)
+          if (ch1[index]?.remoteId == chh?.remoteId || chh == null) {
+            present == true;
+            chh = chhh;
+          }
+        if (ch1 == [] && chh != null) ch1 = [chh];
+        if (!present) {
+          if (chh != null) {
+            ch1.add(chh);
+          }
+          chh = chhh;
         }
-      if(ch1==[]&& chh!=null)
-        ch1=[chh];
-      if(!present){
-        if(chh!=null) {
-          ch1.add(chh);
-        }
-        chh=chhh;
-      }
-    });
+      });
+    // print("ch1 $ch1 ");
+    print("discoveredBluetoothDevicesList length ${discoveredBluetoothDevicesList.length}");
+    if (ch1.length==discoveredBluetoothDevicesList.length) {
+      print("ch list we are sending $ch1");
+
+
+      Navigator.pushReplacementNamed(context, AdjustSettingsHome.routeName,
+          arguments: {
+            'ch': ch1,
+            "disclist": discoveredBluetoothDevicesList
+          });
+    }
 
     print("Length of ch ${ch1.length}");
+  }
+
+   is_connected(BluetoothDevice device) {
+    bool state=false;
+    device.state.listen((event) {
+      if(event==BluetoothConnectionState.connected) {
+        state = true;
+         stream(device);
+        print(state);
+
+      }else
+      if(event==BluetoothConnectionState.disconnected) {
+        state=false;
+        print(state);
+      }
+      else  if(event==BluetoothConnectionState.connecting)
+        {
+          print("connecting");
+        }
+
+    });
+    return state;
+
   }
   is_present(ScanResult r)async
   {
@@ -442,8 +493,16 @@ int sec_counter=0;
         present == true;
       }}
     if(!present){
-      await  connection(r);
+      await  connection(r.device);
     }
+  }
+
+  void begin() async{
+    for (int i=0;i<discoveredBluetoothDevicesList.length;i++){
+      print("Device ${discoveredBluetoothDevicesList[i].device.remoteId} ");
+      await connection(discoveredBluetoothDevicesList[i].device);
+    }
+
   }
 
 }
